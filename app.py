@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import streamlit as st
 import pandas as pd
 from collections import defaultdict
@@ -5,10 +6,37 @@ from collections import defaultdict
 # ============================================================
 # CONFIG
 # ============================================================
-st.set_page_config(page_title="Cobros Yom", page_icon="ð", layout="wide")
+st.set_page_config(page_title="Cobros Yom", page_icon="\U0001F49C", layout="wide")
 
 # ============================================================
-# DATA: CatÃ¡logo de reglas de cobro
+# AUTH: Clave de acceso
+# ============================================================
+def check_password():
+    """Retorna True si el usuario ingresa la clave correcta."""
+    CLAVE = st.secrets.get("CLAVE", "yom2026")
+
+    if "authenticated" not in st.session_state:
+        st.session_state.authenticated = False
+
+    if st.session_state.authenticated:
+        return True
+
+    st.markdown("### Cobros Yom")
+    st.caption("Ingresa la clave para acceder.")
+    pwd = st.text_input("Clave", type="password", key="pwd_input")
+    if st.button("Entrar"):
+        if pwd == CLAVE:
+            st.session_state.authenticated = True
+            st.rerun()
+        else:
+            st.error("Clave incorrecta.")
+    return False
+
+if not check_password():
+    st.stop()
+
+# ============================================================
+# DATA: Catalogo de reglas de cobro
 # ============================================================
 CATALOGO = [
     # Dicalla
@@ -16,35 +44,35 @@ CATALOGO = [
          tipo="proporcional", precio_base=40, incluido=1000, adicional=6.9, unidad=1000,
          moneda="UF", mes_desde=None, mes_hasta=None,
          variable="Comercios Growth", variable_hint="Comercios Growth activos",
-         notas="ð¡ PRECIO INVENTADO UF 40 â confirmar. Adicional UF 6,9/1000.", placeholder=True),
+         notas="PRECIO INVENTADO UF 40 - confirmar. Adicional UF 6,9/1000.", placeholder=True),
     dict(cliente="Dicalla", concepto="SaaS Sales Intelligence (hasta 1.000 comercios)",
          tipo="proporcional", precio_base=25, incluido=1000, adicional=4.3, unidad=1000,
          moneda="UF", mes_desde=None, mes_hasta=None,
          variable="Comercios SI", variable_hint="Comercios Sales Intelligence",
-         notas="ð¡ PRECIO INVENTADO UF 25 â confirmar. Adicional UF 4,3/1000.", placeholder=True),
+         notas="PRECIO INVENTADO UF 25 - confirmar. Adicional UF 4,3/1000.", placeholder=True),
     dict(cliente="Dicalla", concepto="Vendedores adicionales (App Venta)",
          tipo="proporcional", precio_base=0, incluido=25, adicional=0.8, unidad=1,
          moneda="UF", mes_desde=None, mes_hasta=None,
          variable="Vendedores activos", variable_hint="Vendedores en App Venta (25 incluidos)",
          notas="Fase 2. UF 0,8 por vendedor sobre 25 base.", placeholder=False),
-    # El MuÃ±eco
-    dict(cliente="El MuÃ±eco", concepto="Cuota setup (UF 132 en 6 cuotas)",
+    # El Muneco
+    dict(cliente="El Muneco", concepto="Cuota setup (UF 132 en 6 cuotas)",
          tipo="cuota", precio_base=22, incluido=None, adicional=None, unidad=None,
          moneda="UF", mes_desde=1, mes_hasta=6,
          variable=None, variable_hint=None,
-         notas="Ajustar mes desde/hasta segÃºn fecha real de inicio.", placeholder=False),
-    dict(cliente="El MuÃ±eco", concepto="SaaS base mensual",
+         notas="Ajustar mes desde/hasta segun fecha real de inicio.", placeholder=False),
+    dict(cliente="El Muneco", concepto="SaaS base mensual",
          tipo="fijo", precio_base=30, incluido=None, adicional=None, unidad=None,
          moneda="UF", mes_desde=None, mes_hasta=None,
          variable=None, variable_hint=None,
-         notas="ð¡ PRECIO INVENTADO UF 30 â confirmar.", placeholder=True),
+         notas="PRECIO INVENTADO UF 30 - confirmar.", placeholder=True),
     # Bastien
-    dict(cliente="Bastien", concepto="SaaS + ConsultorÃ­a (piloto)",
+    dict(cliente="Bastien", concepto="SaaS + Consultoria (piloto)",
          tipo="cuota", precio_base=172, incluido=None, adicional=None, unidad=None,
          moneda="UF", mes_desde=1, mes_hasta=4,
          variable=None, variable_hint=None,
          notas="4 meses piloto. Incluye 25 vendedores, 1.000 clientes.", placeholder=False),
-    dict(cliente="Bastien", concepto="SaaS + OperaciÃ³n",
+    dict(cliente="Bastien", concepto="SaaS + Operacion",
          tipo="cuota", precio_base=125, incluido=None, adicional=None, unidad=None,
          moneda="UF", mes_desde=5, mes_hasta=6,
          variable=None, variable_hint=None,
@@ -53,32 +81,32 @@ CATALOGO = [
          tipo="variable_puro", precio_base=0, incluido=None, adicional=0.02, unidad=1,
          moneda="UF", mes_desde=None, mes_hasta=None,
          variable="Transacciones B2B", variable_hint="Transacciones B2B del mes",
-         notas="UF 0,02 por transacciÃ³n.", placeholder=False),
+         notas="UF 0,02 por transaccion.", placeholder=False),
     dict(cliente="Bastien", concepto="LLM Commerce (tokens)",
          tipo="manual", precio_base=0, incluido=None, adicional=None, unidad=None,
          moneda="CLP", mes_desde=None, mes_hasta=None,
          variable="Consumo LLM CLP", variable_hint="Monto directo en CLP",
-         notas="Si mÃ³dulo instalado. Ingresar monto directo.", placeholder=False),
+         notas="Si modulo instalado. Ingresar monto directo.", placeholder=False),
     # Codelpa
     dict(cliente="Codelpa", concepto="SaaS YOM base",
          tipo="fijo", precio_base=100, incluido=None, adicional=None, unidad=None,
          moneda="UF", mes_desde=None, mes_hasta=None,
          variable=None, variable_hint=None,
          notas="IVA INCLUIDO. Contrato 2019.", placeholder=False),
-    dict(cliente="Codelpa", concepto="MÃ³dulo RecomendaciÃ³n A",
+    dict(cliente="Codelpa", concepto="Modulo Recomendacion A",
          tipo="fijo", precio_base=120, incluido=None, adicional=None, unidad=None,
          moneda="UF", mes_desde=None, mes_hasta=None,
          variable=None, variable_hint=None,
          notas="IVA INCLUIDO. Canasta Base + OOS.", placeholder=False),
-    dict(cliente="Codelpa", concepto="MÃ³dulo RecomendaciÃ³n B",
+    dict(cliente="Codelpa", concepto="Modulo Recomendacion B",
          tipo="fijo", precio_base=80, incluido=None, adicional=None, unidad=None,
          moneda="UF", mes_desde=None, mes_hasta=None,
          variable=None, variable_hint=None,
-         notas="ð¡ PRECIO INVENTADO UF 80 â confirmar.", placeholder=True),
-    dict(cliente="Codelpa", concepto="Ãrdenes B2B e-commerce",
+         notas="PRECIO INVENTADO UF 80 - confirmar.", placeholder=True),
+    dict(cliente="Codelpa", concepto="Ordenes B2B e-commerce",
          tipo="variable_puro", precio_base=0, incluido=None, adicional=0.02, unidad=1,
          moneda="UF", mes_desde=None, mes_hasta=None,
-         variable="Ãrdenes B2B", variable_hint="Ãrdenes B2B procesadas en el mes",
+         variable="Ordenes B2B", variable_hint="Ordenes B2B procesadas en el mes",
          notas="UF 0,02 por orden procesada.", placeholder=False),
 ]
 
@@ -93,7 +121,7 @@ TIPO_LABELS = {
 }
 
 # ============================================================
-# CÃLCULO
+# CALCULO
 # ============================================================
 def calc_monto(item, mes, var_values):
     t = item["tipo"]
@@ -139,10 +167,10 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-st.title("ð Cobros Yom")
+st.title("Cobros Yom")
 st.caption("Elige un cliente, ingresa las variables del mes y listo.")
 
-tab_facturar, tab_catalogo = st.tabs(["â¡ Facturar", "ð CatÃ¡logo completo"])
+tab_facturar, tab_catalogo = st.tabs(["Facturar", "Catalogo completo"])
 
 # ============================================================
 # TAB 1: FACTURAR
@@ -156,16 +184,16 @@ with tab_facturar:
     with col2:
         mes = st.selectbox("Mes", range(1, 13), format_func=lambda m: f"{m} - {MESES[m-1]}", index=3)
     with col3:
-        ano = st.number_input("AÃ±o", min_value=2024, max_value=2030, value=2026)
+        ano = st.number_input("Ano", min_value=2024, max_value=2030, value=2026)
 
-    # Filtrar Ã­tems del cliente
+    # Filtrar items del cliente
     items = [it for it in CATALOGO if it["cliente"] == cliente]
     variables = [it for it in items if it["variable"]]
 
     # Variables del mes
     var_values = {}
     if variables:
-        st.markdown(f"### Variables de {cliente} â {MESES[mes-1]} {ano}")
+        st.markdown(f"### Variables de {cliente} -- {MESES[mes-1]} {ano}")
         cols = st.columns(min(len(variables), 3))
         for i, it in enumerate(variables):
             with cols[i % 3]:
@@ -207,9 +235,9 @@ with tab_facturar:
         for i, (moneda, total) in enumerate(totals_by_currency.items()):
             with metric_cols[i]:
                 if moneda == "CLP":
-                    st.metric(f"Total {MESES[mes-1]} â {cliente}", f"${total:,.0f} CLP")
+                    st.metric(f"Total {MESES[mes-1]} -- {cliente}", f"${total:,.0f} CLP")
                 else:
-                    st.metric(f"Total {MESES[mes-1]} â {cliente}", f"{total:,.2f} {moneda}")
+                    st.metric(f"Total {MESES[mes-1]} -- {cliente}", f"{total:,.2f} {moneda}")
 
         st.markdown("")
 
@@ -219,7 +247,7 @@ with tab_facturar:
             with c1:
                 label = row["concepto"]
                 if row["placeholder"]:
-                    label += "  ð¡"
+                    label += " [!]"
                 st.markdown(f"**{label}**")
                 st.caption(TIPO_LABELS.get(row["tipo"], row["tipo"]))
             with c2:
@@ -243,10 +271,10 @@ with tab_facturar:
 
 
 # ============================================================
-# TAB 2: CATÃLOGO COMPLETO
+# TAB 2: CATALOGO COMPLETO
 # ============================================================
 with tab_catalogo:
-    st.markdown("Todas las reglas de cobro. Las filas ð¡ tienen precios inventados por confirmar.")
+    st.markdown("Todas las reglas de cobro. Las filas con [!] tienen precios inventados por confirmar.")
 
     cat_rows = []
     for it in CATALOGO:
@@ -261,7 +289,7 @@ with tab_catalogo:
             "Moneda": it["moneda"],
             "Meses": f"{it['mes_desde']}-{it['mes_hasta']}" if it["mes_desde"] and it["mes_hasta"] else "Todo",
             "Variable": it["variable"] or "-",
-            "Notas": ("ð¡ " if it["placeholder"] else "") + it["notas"],
+            "Notas": ("[!] " if it["placeholder"] else "") + it["notas"],
         })
 
     df = pd.DataFrame(cat_rows)
